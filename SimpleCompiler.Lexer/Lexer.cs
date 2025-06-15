@@ -34,7 +34,16 @@ public class Lexer : ILexer
             { '/', TokenType.Divide },
         };
 
-    private readonly List<char> _doubleCharTokens = ['=', '!', '<', '>', '|', '&', '/'];
+    private readonly Dictionary<char, TokenType> _doubleCharTokens = new()
+    {
+        { '=', TokenType.Keyword },
+        { '!', TokenType.Keyword },
+        { '<', TokenType.Keyword },
+        { '>', TokenType.Keyword },
+        { '|', TokenType.Keyword },
+        { '&', TokenType.Keyword },
+        { '/', TokenType.Keyword }
+    };
 
     public async IAsyncEnumerable<Token> Lex(string input)
     {
@@ -43,25 +52,25 @@ public class Lexer : ILexer
             switch (_lexerState)
             {
                 case LexerState.None:
-                    await foreach (var p in NoneLexState(c)) yield return p;
+                    foreach (var p in NoneLexState(c)) yield return p;
                     break;
                 case LexerState.Symbol:
-                    await foreach (var p1 in DoubleSymbolLexState(c)) yield return p1;
+                    foreach (var p1 in DoubleSymbolLexState(c)) yield return p1;
                     break;
                 case LexerState.Identifier:
-                    await foreach (var p2 in IdentifierLexState(c)) yield return p2;
+                    foreach (var p2 in IdentifierLexState(c)) yield return p2;
                     continue;
                 case LexerState.Number:
-                    await foreach (var p3 in NumberLexState(c)) yield return p3;
+                    foreach (var p3 in NumberLexState(c)) yield return p3;
                     break;
                 case LexerState.String:
-                    await foreach (var p4 in StringLexState(c)) yield return p4;
+                    foreach (var p4 in StringLexState(c)) yield return p4;
                     break;
                 case LexerState.SimpleComment:
-                    await foreach (var p5 in SimpleCommentLexState(c)) yield return p5;
+                    foreach (var p5 in SimpleCommentLexState(c)) yield return p5;
                     continue;
                 case LexerState.MultiLineComment:
-                    await foreach (var p6 in MultiLineCommentLexState(c)) yield return p6;
+                    foreach (var p6 in MultiLineCommentLexState(c)) yield return p6;
                     continue;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -69,7 +78,7 @@ public class Lexer : ILexer
         }
     }
 
-    private async IAsyncEnumerable<Token> SimpleCommentLexState(char c)
+    private IEnumerable<Token> SimpleCommentLexState(char c)
     {
         if (c != '\n')
         {
@@ -78,37 +87,40 @@ public class Lexer : ILexer
         }
 
         yield return new Token(TokenType.Comment, _sb.ToString());
-        _sb.Clear();
-        _lexerState = LexerState.None;
+        Reset();
         _lineNumber++;
     }
 
-    private async IAsyncEnumerable<Token> MultiLineCommentLexState(char c)
+    private void Reset()
+    {
+        _sb.Clear();
+        _lexerState = LexerState.None;
+    }
+
+    private IEnumerable<Token> MultiLineCommentLexState(char c)
     {
         if (_sb.ToString().EndsWith("*\\"))
         {
-            _lexerState = LexerState.None;
             yield return new Token(TokenType.Comment, _sb.ToString());
-            _sb.Clear();
+            Reset();
         }
 
         _sb.Append(c);
     }
 
-    private async IAsyncEnumerable<Token> StringLexState(char c)
+    private IEnumerable<Token> StringLexState(char c)
     {
         if (c == '"')
         {
-            _lexerState = LexerState.None;
             yield return new Token(TokenType.String, _sb.ToString());
-            _sb.Clear();
+            Reset();
             yield break;
         }
 
         _sb.Append(c);
     }
 
-    private async IAsyncEnumerable<Token> NumberLexState(char c)
+    private IEnumerable<Token> NumberLexState(char c)
     {
         if (char.IsDigit(c))
         {
@@ -117,12 +129,17 @@ public class Lexer : ILexer
         }
 
         yield return new Token(TokenType.Number, _sb.ToString());
-        _sb.Clear();
-        _lexerState = LexerState.None;
-        await foreach (var token in CheckFirstChar(c)) yield return token;
+        Reset();
+
+        var token = CheckFirstChar(c);
+
+        if (token != null)
+        {
+            yield return token;
+        }
     }
 
-    private async IAsyncEnumerable<Token> IdentifierLexState(char c)
+    private IEnumerable<Token> IdentifierLexState(char c)
     {
         if (c == '_')
         {
@@ -139,46 +156,63 @@ public class Lexer : ILexer
         var type = _keywords.Contains(_sb.ToString()) ? TokenType.Keyword : TokenType.Identifier;
 
         yield return new Token(type, _sb.ToString());
-        _sb.Clear();
-        _lexerState = LexerState.None;
 
-        await foreach (var token in CheckFirstChar(c)) yield return token;
+        Reset();
+
+        var token = CheckFirstChar(c);
+
+        if (token != null)
+        {
+            yield return token;
+        }
     }
 
-    private async IAsyncEnumerable<Token> DoubleSymbolLexState(char c)
+    private IEnumerable<Token> DoubleSymbolLexState(char c)
     {
+        if (_sb.ToString().Length != 1)
+        {
+            Console.WriteLine(_sb.ToString());
+            throw new Exception("Should not be more then one character in _sb");
+        }
+
         if (c == '=' && _sb.ToString() == "=")
         {
+            Reset();
             yield return DoubleSymbolToken('=', '=');
             yield break;
         }
 
         if (c == '|' && _sb.ToString() == "|")
         {
+            Reset();
             yield return DoubleSymbolToken('|', '|');
             yield break;
         }
 
         if (c == '&' && _sb.ToString() == "&")
         {
+            Reset();
             yield return DoubleSymbolToken('&', '&');
             yield break;
         }
 
         if (c == '=' && _sb.ToString() == "!")
         {
+            Reset();
             yield return DoubleSymbolToken('!', '=');
             yield break;
         }
 
         if (c == '=' && _sb.ToString() == ">")
         {
+            Reset();
             yield return DoubleSymbolToken('>', '=');
             yield break;
         }
 
         if (c == '=' && _sb.ToString() == "<")
         {
+            Reset();
             yield return DoubleSymbolToken('<', '=');
             yield break;
         }
@@ -199,65 +233,82 @@ public class Lexer : ILexer
             yield break;
         }
 
-        yield return new Token(TokenType.Error, _sb.ToString());
+        var previousChar = _sb.ToString()[0];
 
-        await foreach (var token in CheckFirstChar(c)) yield return token;
+        if (_doubleCharTokens.TryGetValue(previousChar, out var tokenType))
+        {
+            Reset();
+            yield return new Token(tokenType, previousChar);
+        }
+
+        Reset();
+
+        var token = CheckFirstChar(c);
+        if (token != null)
+        {
+            yield return token;
+        }
     }
 
-    private async IAsyncEnumerable<Token> NoneLexState(char c)
+    private IEnumerable<Token> NoneLexState(char c)
     {
-        await foreach (var token in CheckFirstChar(c)) yield return token;
+        var token = CheckFirstChar(c);
+        if (token != null)
+        {
+            yield return token;
+        }
     }
 
     private Token DoubleSymbolToken(char first, char second)
     {
-        _sb.Clear();
-        _lexerState = LexerState.None;
+        Reset();
         return new Token(TokenType.Keyword, first + second);
     }
 
-    private async IAsyncEnumerable<Token> CheckFirstChar(char c)
+    private Token? CheckFirstChar(char c)
     {
         var charType = GetCharType(c);
 
         if (charType == CharType.Whitespace)
         {
-            yield break;
+            return null;
         }
+
         if (c == '\n')
         {
             _lineNumber++;
-            yield break;
+            return null;
         }
 
 
-        if (_doubleCharTokens.Contains(c))
+        if (_doubleCharTokens.ContainsKey(c))
         {
             _lexerState = LexerState.Symbol;
             _sb.Append(c);
-            yield break;
+            return null;
         }
 
         if (_singleCharToken.TryGetValue(c, out var value))
         {
-            yield return new Token(value, c);
+            return new Token(value, c);
         }
 
         if (charType == CharType.Letter)
         {
             _lexerState = LexerState.Identifier;
             _sb.Append(c);
-            yield break;
+            return null;
         }
 
         if (charType == CharType.Digit)
         {
             _lexerState = LexerState.Number;
             _sb.Append(c);
-            yield break;
+            return null;
         }
 
-        Console.WriteLine("Unknown character: " + c);
+        Console.WriteLine("Unknown character:" + c);
+        return null;
     }
 
     private async IAsyncEnumerable<char> ReadChars(string input)
