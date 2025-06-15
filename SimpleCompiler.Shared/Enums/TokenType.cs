@@ -16,5 +16,15 @@ public enum TokenType
     OpenCurlyBracket,
     ClosedCurlyBracket,
     Error,
-    Comment
+    Comment,
+    Equal,
+    Not,
+    Smaller,
+    Larger,
+    Or,
+    And,
+    None,
+    LargerOrEqual,
+    SmallerOrEqual,
+    NotEqual
 }

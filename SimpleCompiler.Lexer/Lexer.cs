@@ -24,7 +24,7 @@ public class Lexer : ILexer
         {
             { ';', TokenType.SemiColon },
             { '{', TokenType.OpenCurlyBracket },
-            { '}', TokenType.OpenCurlyBracket },
+            { '}', TokenType.ClosedCurlyBracket },
             { '(', TokenType.OpenBracket },
             { ')', TokenType.ClosedBracket },
             { ',', TokenType.Comma },
@@ -36,13 +36,24 @@ public class Lexer : ILexer
 
     private readonly Dictionary<char, TokenType> _doubleCharTokens = new()
     {
-        { '=', TokenType.Keyword },
-        { '!', TokenType.Keyword },
-        { '<', TokenType.Keyword },
-        { '>', TokenType.Keyword },
-        { '|', TokenType.Keyword },
-        { '&', TokenType.Keyword },
-        { '/', TokenType.Keyword }
+        { '=', TokenType.Equal },
+        { '!', TokenType.Not },
+        { '<', TokenType.Smaller },
+        { '>', TokenType.Larger },
+
+        { '|', TokenType.Error },
+        { '&', TokenType.Error },
+        { '/', TokenType.Error }
+    };
+
+    private readonly Dictionary<string, TokenType> _possibleDoubleSymbols = new()
+    {
+        { "==", TokenType.Equal },
+        { "!=", TokenType.NotEqual },
+        { "<=", TokenType.SmallerOrEqual },
+        { ">=", TokenType.LargerOrEqual },
+        { "||", TokenType.Or },
+        { "&&", TokenType.And },
     };
 
     public async IAsyncEnumerable<Token> Lex(string input)
@@ -86,7 +97,7 @@ public class Lexer : ILexer
             yield break;
         }
 
-        yield return new Token(TokenType.Comment, _sb.ToString());
+        yield return new Token(TokenType.Comment, _lineNumber, _sb.ToString());
         Reset();
         _lineNumber++;
     }
@@ -101,7 +112,7 @@ public class Lexer : ILexer
     {
         if (_sb.ToString().EndsWith("*\\"))
         {
-            yield return new Token(TokenType.Comment, _sb.ToString());
+            yield return new Token(TokenType.Comment, _lineNumber, _sb.ToString());
             Reset();
         }
 
@@ -112,7 +123,7 @@ public class Lexer : ILexer
     {
         if (c == '"')
         {
-            yield return new Token(TokenType.String, _sb.ToString());
+            yield return new Token(TokenType.String, _lineNumber, _sb.ToString());
             Reset();
             yield break;
         }
@@ -128,7 +139,7 @@ public class Lexer : ILexer
             yield break;
         }
 
-        yield return new Token(TokenType.Number, _sb.ToString());
+        yield return new Token(TokenType.Number, _lineNumber, _sb.ToString());
         Reset();
 
         var token = CheckFirstChar(c);
@@ -155,7 +166,7 @@ public class Lexer : ILexer
 
         var type = _keywords.Contains(_sb.ToString()) ? TokenType.Keyword : TokenType.Identifier;
 
-        yield return new Token(type, _sb.ToString());
+        yield return new Token(type, _lineNumber, _sb.ToString());
 
         Reset();
 
@@ -175,45 +186,15 @@ public class Lexer : ILexer
             throw new Exception("Should not be more then one character in _sb");
         }
 
-        if (c == '=' && _sb.ToString() == "=")
-        {
-            Reset();
-            yield return DoubleSymbolToken('=', '=');
-            yield break;
-        }
+        var previousChar = _sb.ToString()[0];
+        var currentChar = c;
+        var doubleChar = previousChar.ToString() + currentChar.ToString();
 
-        if (c == '|' && _sb.ToString() == "|")
-        {
-            Reset();
-            yield return DoubleSymbolToken('|', '|');
-            yield break;
-        }
 
-        if (c == '&' && _sb.ToString() == "&")
+        if (_possibleDoubleSymbols.TryGetValue(doubleChar, out var doubleSymbolToken))
         {
             Reset();
-            yield return DoubleSymbolToken('&', '&');
-            yield break;
-        }
-
-        if (c == '=' && _sb.ToString() == "!")
-        {
-            Reset();
-            yield return DoubleSymbolToken('!', '=');
-            yield break;
-        }
-
-        if (c == '=' && _sb.ToString() == ">")
-        {
-            Reset();
-            yield return DoubleSymbolToken('>', '=');
-            yield break;
-        }
-
-        if (c == '=' && _sb.ToString() == "<")
-        {
-            Reset();
-            yield return DoubleSymbolToken('<', '=');
+            yield return new Token(doubleSymbolToken, _lineNumber, doubleChar);
             yield break;
         }
 
@@ -233,7 +214,6 @@ public class Lexer : ILexer
             yield break;
         }
 
-        var previousChar = _sb.ToString()[0];
 
         if (_doubleCharTokens.TryGetValue(previousChar, out var tokenType))
         {
@@ -253,16 +233,11 @@ public class Lexer : ILexer
     private IEnumerable<Token> NoneLexState(char c)
     {
         var token = CheckFirstChar(c);
+        
         if (token != null)
         {
             yield return token;
         }
-    }
-
-    private Token DoubleSymbolToken(char first, char second)
-    {
-        Reset();
-        return new Token(TokenType.Keyword, first + second);
     }
 
     private Token? CheckFirstChar(char c)
@@ -306,8 +281,7 @@ public class Lexer : ILexer
             _sb.Append(c);
             return null;
         }
-
-        Console.WriteLine("Unknown character:" + c);
+        //Console.WriteLine("Unknown character:" + c);
         return null;
     }
 

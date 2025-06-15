@@ -8,7 +8,7 @@ public class Compiler(ILexer lexer, IParser parser)
     {
         await foreach (var token in  lexer.Lex(input))
         {
-            Console.WriteLine($"<{token.Type},{token.Value}>");
+            Console.WriteLine($"<{token.Type},{token.Value}> at Line: {token.Line}");
             await parser.ParseAsync(token);
         };
     }

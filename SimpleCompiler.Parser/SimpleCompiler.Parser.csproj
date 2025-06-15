@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SimpleCompiler.Shared\SimpleCompiler.Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Antlr" Version="3.5.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Nodes\Expressions\" />
+      <Folder Include="Nodes\Statements\" />
+    </ItemGroup>
+
+</Project>
