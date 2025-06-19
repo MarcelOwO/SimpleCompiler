@@ -8,8 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SimpleCompiler.Lexer\SimpleCompiler.Lexer.csproj" />
-      <ProjectReference Include="..\SimpleCompiler.Parser\SimpleCompiler.Parser.csproj" />
       <ProjectReference Include="..\SimpleCompiler.Shared\SimpleCompiler.Shared.csproj" />
     </ItemGroup>
 

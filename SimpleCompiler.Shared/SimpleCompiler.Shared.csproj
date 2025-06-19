@@ -5,9 +5,18 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
-
     <ItemGroup>
-      <Folder Include="Modules\" />
+        <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1"/>
+        <PackageReference Include="Antlr4BuildTasks" Version="12.10.0"/>
     </ItemGroup>
-
+    <!--
+    <ItemGroup>
+        <Antlr4 Include="Grammar\Simple.g4">
+            <Listener>true</Listener>
+            <Visitor>true</Visitor>
+            <GAtn>true</GAtn>
+            <Error>false</Error>
+        </Antlr4>
+    </ItemGroup>
+    -->
 </Project>

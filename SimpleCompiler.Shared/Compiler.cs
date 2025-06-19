@@ -1,15 +1,17 @@
-﻿using SimpleCompiler.Shared.Interfaces;
+﻿
+using Antlr4.Runtime;
 
 namespace SimpleCompiler.Shared;
 
-public class Compiler(ILexer lexer, IParser parser)
+public class Compiler()
 {
     public async Task Compile(string input, string output)
     {
-        await foreach (var token in  lexer.Lex(input))
-        {
-            Console.WriteLine($"<{token.Type},{token.Value}> at Line: {token.Line}");
-            await parser.ParseAsync(token);
-        };
+        var inputStream = new AntlrInputStream(new StreamReader(input));
+        var lexer = new SimpleLexer(inputStream);
+        var parser = new SimpleParser(new CommonTokenStream(lexer));
+        var tree = parser.program();
+        Console.WriteLine(tree.ToStringTree(parser));
     }
+    
 }

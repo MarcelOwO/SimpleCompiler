@@ -1,5 +1,4 @@
-﻿using SimpleCompiler.Lexer;
-using SimpleCompiler.Parser;
+﻿using Antlr4.Runtime;
 using SimpleCompiler.Shared;
 
 string inFile;
@@ -35,10 +34,7 @@ if (!Directory.Exists(outPath))
 }
 
 Console.WriteLine("Starting compilation...");
-var lexer = new Lexer();
-var parser = new Parser();
-Compiler compiler = new(lexer,parser);
-
+Compiler compiler = new();
 await compiler.Compile(inFile, outPath);
 
 
